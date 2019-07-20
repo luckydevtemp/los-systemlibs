@@ -34,6 +34,13 @@
 
 unit SysCalls;
 
+{$IFDEF KERNEL}
+  {$IFNDEF DIRECTCALL}
+    {$DEFINE DIRECTCALL}
+  {$ENDIF}
+{$ENDIF}
+
+
 interface
 
 uses SystemDef, ErrorsDef;
@@ -51,51 +58,68 @@ uses SystemDef, ErrorsDef;
 implementation
 
 uses SysCallsDef
-{$IFDEF KERNEL}
+{$IFDEF DIRECTCALL}
   , SystemCalls
 {$ENDIF}
 ;
 
 
-function DoCall(CallNo : TSysCall; Param1 : UInt) : SInt; forward;
-function DoCall(CallNo : TSysCall; Param1, Param2 : UInt) : SInt; forward;
-function DoCall(CallNo : TSysCall; Param1, Param2, Param3 : UInt) : SInt; forward;
+  { Procedimentos Internos - forward }
+  function DoCall(CallNo : TSysCall; Param1 : UInt) : SInt; forward;
+  function DoCall(CallNo : TSysCall; Param1, Param2 : UInt) : SInt; forward;
+  function DoCall(CallNo : TSysCall; Param1, Param2, Param3 : UInt) : SInt; forward;
 
+
+  { Procedimentos Externos }
 
 procedure SysAbort(Error : TErrorCode; ErrorMsg : PChar; AbortRec : PAbortRec);
+    alias: 'LOS_SYSTEM_ABORT';
+
 begin
   DoCall(Sys_Abort, UInt(Error), UInt(ErrorMsg), UInt(AbortRec));
 end;
 
 procedure SysExit(Status : SInt);
+    alias: 'LOS_SYSTEM_EXIT';
+
 begin
   DoCall(Sys_Exit, UInt(Status));
 end;
 
 
 function  SysOpen(Name : PChar; Mode : TFileMode) : SInt;
+    alias: 'LOS_SYSTEM_OPEN';
+
 begin
   SysOpen := DoCall(Sys_Open, UInt(Name), UInt(Mode));
 end;
 
 function  SysClose(FD : UInt) : SInt;
+    alias: 'LOS_SYSTEM_CLOSE';
+
 begin
   SysClose := DoCall(Sys_Close, FD);
 end;
 
 
 function  SysRead(FD : UInt; Buffer : Pointer; Count : SInt) : SInt;
+    alias: 'LOS_SYSTEM_READ';
+
 begin
   SysRead := DoCall(Sys_Read, FD, UInt(Buffer), UInt(Count));
 end;
 
 function  SysWrite(FD : UInt; Buffer : Pointer; Count : SInt) : SInt;
+    alias: 'LOS_SYSTEM_WRITE';
+
 begin
   SysWrite := DoCall(Sys_Write, FD, UInt(Buffer), SInt(Count));
 end;
 
 
-{$IFDEF KERNEL}
+  { Procedimentos Internos }
+
+{$IFDEF DIRECTCALL}
 function DoCall(CallNo : TSysCall; Param1 : UInt) : SInt;
 begin
   DoCall := DirectCall(UInt(CallNo), Param1, 0, 0);
